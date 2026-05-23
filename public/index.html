@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>AI 安全生产技术规范 审计资料库</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link href="https://unpkg.com/@phosphor-icons/web" rel="stylesheet">
+    <style>
+        body { background: #050b14; color: #e0e6ed; }
+        .tech-panel { background: rgba(13, 27, 42, 0.85); border: 1px solid #1b2a47; }
+        .qiangtiao { color: #ff3366 !important; font-weight: bold; }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden">
+    <div id="authOverlay" class="fixed inset-0 z-50 flex items-center justify-center bg-[#050b14]">
+        <div class="tech-panel p-10 rounded-xl flex flex-col items-center">
+            <h1 class="text-xl text-[#00e5ff] mb-6">请输入访问口令</h1>
+            <input type="password" id="pin" maxlength="4" class="bg-transparent border-b-2 border-gray-600 text-center text-4xl w-32 outline-none text-[#00e5ff]">
+            <button onclick="verify()" class="mt-8 px-8 py-2 border border-[#00e5ff] text-[#00e5ff]">进入系统</button>
+        </div>
+    </div>
+
+    <header class="py-6 border-b border-[#1b2a47] text-center">
+        <h1 class="text-3xl font-bold text-[#00e5ff] glow-text">AI 安全生产技术规范 审计资料库</h1>
+        <p class="text-[#8a9bb2] mt-2">数据强关联 · 时效性监测 · 自动化查表</p>
+    </header>
+
+    <div id="chatArea" class="flex-1 overflow-y-auto p-8 space-y-6"></div>
+
+    <form onsubmit="submitAudit(event)" class="p-6 tech-panel border-t">
+        <input type="text" id="query" class="w-full bg-transparent border border-[#1b2a47] p-4 text-white" placeholder="输入审计指令..." required>
+    </form>
+
+    <script>
+        async function verify() {
+            if(document.getElementById('pin').value === '0000') {
+                document.getElementById('authOverlay').style.display = 'none';
+            }
+        }
+
+        async function submitAudit(e) {
+            e.preventDefault();
+            const query = document.getElementById('query').value;
+            const res = await fetch('/api/audit', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({pin: '0000', query: query})
+            });
+            const data = await res.json();
+            const chat = document.getElementById('chatArea');
+            chat.innerHTML = marked.parse(data.result.replace(/规范要求[（\(]强条[\)）]/g, '<strong class="qiangtiao">规范要求（强条）</strong>'));
+        }
+    </script>
+</body>
+</html>
