@@ -1,14 +1,18 @@
+// 引入 dotenv 以便在本地开发时读取 .env 文件
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// 优先级：先读取 Render 环境变量，若无则使用硬编码（仅作为紧急备用）
+const API_KEY = process.env.GEMINI_API_KEY || "AIzaSyBpKrANJLM450pr5mERRbaEhIzIYhUKpnk";
+const genAI = new GoogleGenerativeAI(API_KEY);
 
 // 强校验指令：确保专家身份与输出格式
 const SYSTEM_INSTRUCTION = `
@@ -24,18 +28,34 @@ const SYSTEM_INSTRUCTION = `
 
 app.post('/api/audit', async (req, res) => {
     const { pin, query } = req.body;
-    if (pin !== '0000') return res.status(401).send('访问拒绝');
+    
+    // 权限校验
+    if (pin !== '0000') {
+        return res.status(401).json({ error: '访问拒绝：PIN 码错误' });
+    }
+
+    if (!query) {
+        return res.status(400).json({ error: '审计指令不能为空' });
+    }
 
     try {
+        // 使用 gemini-1.5-flash 模型以提升免费版稳定性，避免 429 报错
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-2.0-flash", 
+            model: "gemini-1.5-flash", 
             systemInstruction: SYSTEM_INSTRUCTION 
         });
+        
         const result = await model.generateContent(query);
-        res.json({ result: result.response.text() });
+        const responseText = result.response.text();
+        
+        res.json({ result: responseText });
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        console.error("审计执行错误:", e);
+        res.status(500).json({ error: e.message || "服务器内部审计异常" });
     }
 });
 
-app.listen(process.env.PORT || 3000);
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => {
+    console.log(`EHS 审计系统运行中，端口: ${PORT}`);
+});
