@@ -1,4 +1,3 @@
-// 引入 dotenv 以便在本地开发时读取 .env 文件
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -10,11 +9,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// 优先级：先读取 Render 环境变量，若无则使用硬编码（仅作为紧急备用）
+// 确保 API Key 被读取
 const API_KEY = process.env.GEMINI_API_KEY || "AIzaSyBpKrANJLM450pr5mERRbaEhIzIYhUKpnk";
 const genAI = new GoogleGenerativeAI(API_KEY);
 
-// 强校验指令：确保专家身份与输出格式
 const SYSTEM_INSTRUCTION = `
 你是“安全技术规范审计专家”。
 1. 绝对准则：严谨溯源，零幻觉。所有结论必须源自文件上下文。
@@ -29,7 +27,6 @@ const SYSTEM_INSTRUCTION = `
 app.post('/api/audit', async (req, res) => {
     const { pin, query } = req.body;
     
-    // 权限校验
     if (pin !== '0000') {
         return res.status(401).json({ error: '访问拒绝：PIN 码错误' });
     }
@@ -39,9 +36,9 @@ app.post('/api/audit', async (req, res) => {
     }
 
     try {
-        // 使用 gemini-1.5-flash 模型以提升免费版稳定性，避免 429 报错
+        // 使用明确的模型路径，防止 404 错误
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash", 
+            model: "models/gemini-1.5-flash", 
             systemInstruction: SYSTEM_INSTRUCTION 
         });
         
@@ -51,6 +48,7 @@ app.post('/api/audit', async (req, res) => {
         res.json({ result: responseText });
     } catch (e) {
         console.error("审计执行错误:", e);
+        // 如果再次报错 404，可能是该 API Key 的权限问题，前端会弹窗显示此错误
         res.status(500).json({ error: e.message || "服务器内部审计异常" });
     }
 });
