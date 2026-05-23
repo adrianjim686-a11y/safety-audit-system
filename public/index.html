@@ -28,9 +28,12 @@
 
     <div id="chatArea" class="flex-1 overflow-y-auto p-8 space-y-6"></div>
 
-    <form onsubmit="submitAudit(event)" class="p-6 tech-panel border-t">
-        <input type="text" id="query" class="w-full bg-transparent border border-[#1b2a47] p-4 text-white" placeholder="输入审计指令..." required>
-    </form>
+    <form onsubmit="submitAudit(event)" class="p-6 tech-panel border-t flex gap-4">
+    <input type="text" id="query" class="flex-1 bg-transparent border border-[#1b2a47] p-4 text-white outline-none" placeholder="输入审计指令..." required>
+    <button type="submit" class="px-6 py-4 border border-[#00e5ff] text-[#00e5ff] hover:bg-[#00e5ff] hover:text-[#050b14] transition-all">
+        开始审计
+    </button>
+</form>
 
     <script>
         async function verify() {
